@@ -1,0 +1,165 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto px-4 py-8">
+    <!-- Top Bar with Buttons -->
+    <div class="flex flex-wrap justify-between items-center gap-4 mb-6">
+        <a href="/action" class="inline-flex items-center text-blue-600 hover:text-blue-800 transition">
+            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+            </svg>
+            Back to Employee List
+        </a>
+        <div class="flex gap-3">
+            <button onclick="document.getElementById('addDocumentModal').style.display='flex'" 
+                    class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition">
+                Add Document
+            </button>
+            <a href="#" class="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg transition">
+                Update
+            </a>
+        </div>
+    </div>
+
+    <h1 class="text-2xl font-bold text-gray-800 mb-4">Employee Details</h1>
+
+    <div class="bg-white rounded-xl shadow-md overflow-hidden">
+        <!-- Header with Photo and Name -->
+        <div class="bg-gray-50 border-b border-gray-200 p-6">
+            <div class="flex flex-col md:flex-row items-center md:items-start gap-6">
+                <!-- Photo -->
+                <div class="flex-shrink-0">
+                    {% if employee.photo_url %}
+                        <img src="{{ url_for('static', filename=employee.photo_url) }}" 
+                             alt="{{ employee.fname }} {{ employee.mname }}"
+                             class="w-32 h-32 rounded-full object-cover border-4 border-white shadow">
+                    {% else %}
+                        <div class="w-32 h-32 rounded-full bg-gray-300 flex items-center justify-center text-gray-600 text-2xl font-bold border-4 border-white shadow">
+                            {{ (employee.fname[0]|default('')) }}{{ (employee.lname[0]|default('')) }}
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="text-center md:text-left">
+                    <h2 class="text-xl font-bold text-gray-800">
+                        {{ employee.fname }} {{ employee.mname }} {{ employee.lname }}
+                    </h2>
+                    <div class="mt-2 flex flex-wrap gap-2 justify-center md:justify-start">
+                        <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">Fan ID: {{ employee.fanID|default('N/A') }}</span>
+                        <span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">{{ employee.gender|default('Not specified') }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Details Grid (two columns) -->
+        <div class="p-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3">
+                <!-- Left column -->
+                <div class="space-y-2">
+                    <div class="flex justify-between border-b py-2">
+                        <span class="font-medium text-gray-600">ስም</span>
+                        <span class="text-gray-800">{{ employee.fname }} {{ employee.mname }} {{ employee.lname }}</span>
+                    </div>
+                    <div class="flex justify-between border-b py-2">
+                        <span class="font-medium text-gray-600">ጾታ</span>
+                        <span class="text-gray-800">{{ employee.gender|default('N/A') }}</span>
+                    </div>
+                    <div class="flex justify-between border-b py-2">
+                        <span class="font-medium text-gray-600">የቤተሰብ ስም</span>
+                        <span class="text-gray-800">{{ employee.group_name|default('N/A') }}</span>
+                    </div>
+                    <div class="flex justify-between border-b py-2">
+                        <span class="font-medium text-gray-600">በፓርቲ ያለው ኃላፊነት</span>
+                        <span class="text-gray-800">{{ employee.position_in_group|default('N/A') }}</span>
+                    </div>
+                    <div class="flex justify-between border-b py-2">
+                        <span class="font-medium text-gray-600">የት/ት መስክ</span>
+                        <span class="text-gray-800">{{ employee.profession|default('N/A') }}</span>
+                    </div>
+                    <div class="flex justify-between border-b py-2">
+                        <span class="font-medium text-gray-600">የተመዘገበበት ቀን</span>
+                        <span class="text-gray-800">{{ employee.join_year.strftime('%Y-%m-%d') if employee.join_year else 'N/A' }}</span>
+                    </div>
+                </div>
+                <!-- Right column -->
+                <div class="space-y-2">
+                    <div class="flex justify-between border-b py-2">
+                        <span class="font-medium text-gray-600">የሚሰራበት ተቋም</span>
+                        <span class="text-gray-800">{{ employee.work_place|default('N/A') }}</span>
+                    </div>
+                    <div class="flex justify-between border-b py-2">
+                        <span class="font-medium text-gray-600">የህብረቱ ስም</span>
+                        <span class="text-gray-800">{{ employee.work_place_name|default('N/A') }}</span>
+                    </div>
+                    <div class="flex justify-between border-b py-2">
+                        <span class="font-medium text-gray-600">የትምህርት ደረጃ</span>
+                        <span class="text-gray-800">{{ employee.edu_level|default('N/A') }}</span>
+                    </div>
+                    <div class="flex justify-between border-b py-2">
+                        <span class="font-medium text-gray-600">አድራሻ</span>
+                        <span class="text-gray-800">{{ employee.werada|default('') }}, {{ employee.kebele|default('') }}, {{ employee.house_number|default('') }}</span>
+                    </div>
+                    <div class="flex justify-between border-b py-2">
+                        <span class="font-medium text-gray-600">ስልክ</span>
+                        <span class="text-gray-800">{{ employee.phone_number|default('N/A') }}</span>
+                    </div>
+                    <div class="flex justify-between border-b py-2">
+                        <span class="font-medium text-gray-600">የስራ ልምድ (ዓመታት)</span>
+                        <span class="text-gray-800">{{ employee.work_experience|default('N/A') }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Documents Section -->
+            <h3 class="text-lg font-semibold text-gray-800 border-b pb-2 mt-6 mb-4">Documents</h3>
+            <div class="bg-gray-50 rounded-lg p-4">
+                {% if doc %}
+                    <ul class="list-disc list-inside space-y-2">
+                        {% for d in doc %}
+                        <li>
+                            <span class="text-gray-700">{{ d.name }}</span>
+                            <a href="#" class="text-blue-600 hover:text-blue-800 ml-2">View</a>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <p class="text-gray-500">No documents available.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal for Adding Document (form submits to #) -->
+<div id="addDocumentModal" style="display: none; position: fixed; inset: 0; background-color: rgba(0,0,0,0.5); overflow-y: auto; z-index: 1000; align-items: center; justify-content: center;">
+    <div style="background-color: white; margin: 2rem auto; padding: 1.5rem; border-radius: 0.5rem; max-width: 32rem; width: 90%; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);">
+        <div class="flex justify-between items-center pb-3 border-b">
+            <h3 class="text-xl font-semibold text-gray-900">Add Document</h3>
+            <button onclick="document.getElementById('addDocumentModal').style.display='none'" 
+                    class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+        </div>
+        <form action="#" method="post" enctype="multipart/form-data" class="mt-4 space-y-4">
+            <div>
+                <label class="block text-gray-700 text-sm font-medium mb-1">Document Name</label>
+                <input type="text" name="name" required class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+                <label class="block text-gray-700 text-sm font-medium mb-1">File (PDF, Image, etc.)</label>
+                <input type="file" name="document" required class="w-full border border-gray-300 rounded-md px-3 py-2">
+            </div>
+            <div class="flex justify-end gap-3">
+                <button type="button" onclick="document.getElementById('addDocumentModal').style.display='none'" 
+                        class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded-md transition">Cancel</button>
+                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md transition">Upload</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    const modal = document.getElementById('addDocumentModal');
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) modal.style.display = 'none';
+    });
+</script>
+{% endblock %}

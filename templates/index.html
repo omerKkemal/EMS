@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block title %}Home - Employee Management System{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="bg-white rounded-lg shadow-md p-8 mb-8 text-center">
+    <h1 class="text-4xl md:text-5xl font-bold text-gray-800 mb-4">
+        Employee Management System
+    </h1>
+    <p class="text-xl text-gray-600 max-w-2xl mx-auto">
+        A complete solution to manage employee records, track obligations, and organize workforce data efficiently.
+    </p>
+    <div class="mt-8 flex flex-wrap justify-center gap-4">
+        <a href="#" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition">
+            View All Employees
+        </a>
+        <a href="#" class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-semibold transition">
+            Add New Employee
+        </a>
+    </div>
+</section>
+
+<!-- Features Grid -->
+<section class="mb-12">
+    <h2 class="text-2xl font-bold text-gray-800 text-center mb-8">Key Features</h2>
+    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div class="bg-white p-6 rounded-lg shadow-md">
+            <h3 class="text-xl font-semibold mb-2">Complete Employee Profiles</h3>
+            <p class="text-gray-600">Store personal details, contact info, education, profession, work experience, and photo.</p>
+        </div>
+        <div class="bg-white p-6 rounded-lg shadow-md">
+            <h3 class="text-xl font-semibold mb-2">Obligation Tracking</h3>
+            <p class="text-gray-600">Manage employee obligations (e.g., financial, community service) with names and details.</p>
+        </div>
+        <div class="bg-white p-6 rounded-lg shadow-md">
+            <h3 class="text-xl font-semibold mb-2">Salary Management</h3>
+            <p class="text-gray-600">Record and update salaries, track payment history.</p>
+        </div>
+        <div class="bg-white p-6 rounded-lg shadow-md">
+            <h3 class="text-xl font-semibold mb-2">Address Details</h3>
+            <p class="text-gray-600">Wereda, Kebele, house number – complete location tracking.</p>
+        </div>
+        <div class="bg-white p-6 rounded-lg shadow-md">
+            <h3 class="text-xl font-semibold mb-2">Photo Upload</h3>
+            <p class="text-gray-600">Attach employee photos via URL or local storage.</p>
+        </div>
+        <div class="bg-white p-6 rounded-lg shadow-md">
+            <h3 class="text-xl font-semibold mb-2">Secure Authentication</h3>
+            <p class="text-gray-600">User login system (coming soon) to protect sensitive data.</p>
+        </div>
+    </div>
+</section>
+
+<!-- About the System -->
+<section class="bg-blue-50 rounded-lg p-8">
+    <h2 class="text-2xl font-bold text-gray-800 text-center mb-4">Why Use This System?</h2>
+    <div class="max-w-3xl mx-auto text-center text-gray-700">
+        <p class="mb-4">Our Employee Management System helps organizations centralize employee data, reduce paperwork, and improve decision-making.</p>
+        <p class="mb-4">Built with Flask (backend), SQLAlchemy (database), TailwindCSS (styling), and Jinja2 templates.</p>
+        <p class="font-semibold">Future updates will include:</p>
+        <ul class="list-disc list-inside mt-2 inline-block text-left">
+            <li>Full CRUD operations (Add, Edit, Delete, View)</li>
+            <li>Search and filter functionality</li>
+            <li>Role-based access control</li>
+            <li>Employee photo gallery</li>
+        </ul>
+    </div>
+</section>
+{% endblock %}
