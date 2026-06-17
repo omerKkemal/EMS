@@ -17,7 +17,7 @@
                     <a href="{{ url_for('index') }}" class="text-xl font-bold text-gray-800">EMS</a>
                 </div>
                 <div class="hidden md:flex items-center space-x-4">
-                    <a href="{{ url_for('index') }}" class="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md">Dashboard</a>
+                    <a href="{{ url_for('dashboard') }}" class="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md">Dashboard</a>
                     <a href="/action" class="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md">Action</a>
                     
                     <!-- Admin Dropdown -->
@@ -29,8 +29,8 @@
                             </svg>
                         </button>
                         <div id="adminDropdown" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-50 border border-gray-200">
-                            <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Settings</a>
-                            <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 border-t border-gray-200">Logout</a>
+                            <a href="/setting" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Settings</a>
+                            <a href="/logout" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 border-t border-gray-200">Logout</a>
                         </div>
                     </div>
                 </div>
@@ -71,32 +71,7 @@
     </footer>
 
     {% block scripts %}{% endblock %}
-    <script>
-        // Mobile menu toggle
-        const btn = document.querySelector('.mobile-menu-button');
-        if (btn) {
-            btn.addEventListener('click', () => {
-                const menu = document.querySelector('.md\\:flex');
-                if (menu) menu.classList.toggle('hidden');
-            });
-        }
-
-        // Admin dropdown toggle
-        function toggleDropdown() {
-            const dropdown = document.getElementById('adminDropdown');
-            dropdown.classList.toggle('hidden');
-        }
-
-        // Close dropdown when clicking outside
-        window.addEventListener('click', function(e) {
-            const dropdown = document.getElementById('adminDropdown');
-            const adminButton = document.querySelector('button[onclick="toggleDropdown()"]');
-            if (dropdown && !dropdown.classList.contains('hidden')) {
-                if (!dropdown.contains(e.target) && !adminButton.contains(e.target)) {
-                    dropdown.classList.add('hidden');
-                }
-            }
-        });
+    <script src="{{ url_for('static', filename='js/script.js') }}">
     </script>
 </body>
 </html>

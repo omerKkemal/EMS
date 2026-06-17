@@ -1,10 +1,16 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, send_file
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 import base64
 import os
 from datetime import datetime
 from werkzeug.utils import secure_filename
-
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import A4, landscape
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import inch
+from reportlab.lib.enums import TA_CENTER
+from io import BytesIO
 
 from models import User, Employee, Doc
 from manage_db import default_admin
@@ -22,6 +28,11 @@ login_manager.init_app(app)
 login_manager.login_view = "login"
 
 
+@app.context_processor
+def inject_now():
+    from datetime import datetime
+    return {'now': datetime.now()}
+
 @login_manager.user_loader
 def user_loader(user_id):
     return db.query(User).get(int(user_id))
@@ -30,7 +41,7 @@ def user_loader(user_id):
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    return redirect('/login')
 
 
 @app.route('/login', methods=["POST","GET"])
@@ -45,12 +56,28 @@ def login():
         user = db.query(User).filter_by(email=email,password=password).first()
         if user:
             login_user(user)
-            return redirect('/action')
+            return redirect('/dashboard')
         else:
             flash('Incorrect user name or password')
             return render_template('login.html')
 
 # auth
+
+
+@login_required
+@app.route('/dashboard')
+def dashboard():
+    number_of_employee = len(db.query(Employee).all())
+    female_employee = len(db.query(Employee).filter_by(gender="ሴት").all())
+    male_employee = len(db.query(Employee).filter_by(gender="ወነድ").all())
+
+    return render_template(
+        "dashboard.html", 
+        number_of_employee=number_of_employee, 
+        female_employee=female_employee, 
+        male_employee=male_employee
+    )
+
 
 @app.route('/action')
 @login_required
@@ -69,6 +96,234 @@ def employee_detail(id):
         return redirect('/action')
     return render_template('employee_detail.html', employee=employee, doc=doc)
 
+
+@login_required
+@app.route('/setting', methods=['GET', 'POST'])
+def setting():
+    user_info = db.query(User).filter_by(is_default_user=1).first()
+    if not user_info:
+        flash("User not found", "error")
+        return redirect('/dashboard')
+    
+    if request.method == 'POST':
+        email = request.form.get('email')
+        password = request.form.get('password')
+        confirm_password = request.form.get('confirm_password')
+        
+        # Validate email
+        if not email:
+            flash("Email is required", "error")
+            return redirect('/setting')
+        
+        # Check if password is provided and matches
+        if password:
+            if password != confirm_password:
+                flash("Passwords do not match", "error")
+                return redirect('/setting')
+            if len(password) < 8:
+                flash("Password must be at least 8 characters long", "error")
+                return redirect('/setting')
+        
+        # Update user info
+        user_info.email = email
+        if password:  # Only update password if provided
+            user_info.password = password  # Consider hashing the password!
+        
+        try:
+            db.commit()
+            flash("Profile updated successfully", "success")
+            return redirect('/setting')
+        except Exception as e:
+            db.rollback()
+            flash(f"Error updating profile: {str(e)}", "error")
+            return redirect('/setting')
+    
+    return render_template('admin_profile.html', user_info=user_info)
+
+
+@app.route("/report")
+@login_required
+def report():
+    employees = db.query(Employee).all()
+    return render_template('report.html', employees=employees)
+
+@app.route("/report/download")
+@login_required
+def report_download():
+    employees = db.query(Employee).all()
+    
+    # Create PDF
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=landscape(A4),
+        rightMargin=0.3*inch,
+        leftMargin=0.3*inch,
+        topMargin=0.5*inch,
+        bottomMargin=0.5*inch
+    )
+    
+    # Register a font that supports Amharic
+    from reportlab.pdfbase import pdfmetrics
+    from reportlab.pdfbase.ttfonts import TTFont
+    
+    # Make sure the fonts directory exists
+    os.makedirs('static/fonts', exist_ok=True)
+    
+    # Try different font paths
+    font_paths = [
+        os.path.join('static', 'fonts', 'AbyssinicaSIL-Regular.ttf'),
+        os.path.join('static', 'fonts', 'Kefa.ttf'),
+        os.path.join('static', 'fonts', 'Ethiopic.ttf'),
+        os.path.join('static', 'fonts', 'NotoSansEthiopic-Regular.ttf'),
+        '/usr/share/fonts/truetype/abyssinica/AbyssinicaSIL-Regular.ttf',
+        '/usr/share/fonts/truetype/kefa/Kefa.ttf',
+        '/usr/share/fonts/truetype/ethiopia/ethiopia.ttf',
+        '/usr/share/fonts/truetype/noto/NotoSansEthiopic-Regular.ttf',
+        '/System/Library/Fonts/Supplemental/Arial.ttf',  # macOS
+    ]
+    
+    font_registered = False
+    font_name = 'Helvetica'  # fallback font
+    
+    for font_path in font_paths:
+        if os.path.exists(font_path):
+            try:
+                pdfmetrics.registerFont(TTFont('AmharicFont', font_path))
+                font_name = 'AmharicFont'
+                font_registered = True
+                print(f"Successfully loaded font from: {font_path}")
+                break
+            except Exception as e:
+                print(f"Failed to load font from {font_path}: {e}")
+                continue
+    
+    if not font_registered:
+        print("Warning: No Amharic font found. Using Helvetica fallback. Amharic characters may not display correctly.")
+        print("Please download Abyssinica SIL font from: https://abyssinica.com/")
+        print("And place it in: static/fonts/AbyssinicaSIL-Regular.ttf")
+    
+    # Styles
+    styles = getSampleStyleSheet()
+    
+    # Create custom styles with the Amharic font
+    title_style = ParagraphStyle(
+        'TitleStyle',
+        parent=styles['Heading1'],
+        alignment=TA_CENTER,
+        fontName=font_name,
+        fontSize=16
+    )
+    
+    date_style = ParagraphStyle(
+        'DateStyle',
+        parent=styles['Normal'],
+        alignment=TA_CENTER,
+        fontSize=10,
+        textColor=colors.gray,
+        fontName=font_name
+    )
+    
+    header_style = ParagraphStyle(
+        'HeaderStyle',
+        parent=styles['Normal'],
+        fontName=font_name,
+        fontSize=7
+    )
+    
+    cell_style = ParagraphStyle(
+        'CellStyle',
+        parent=styles['Normal'],
+        fontName=font_name,
+        fontSize=6
+    )
+    
+    # Build content
+    content = []
+    
+    # Title
+    title = Paragraph("Employee Report", title_style)
+    content.append(title)
+    content.append(Spacer(1, 0.2*inch))
+    
+    # Date
+    date_str = datetime.now().strftime("%Y-%m-%d %H:%M")
+    date_para = Paragraph(f"Generated on: {date_str}", date_style)
+    content.append(date_para)
+    content.append(Spacer(1, 0.3*inch))
+    
+    # Prepare table data
+    table_data = []
+    
+    # Headers
+    headers = [
+        '#', 'ስም', 'የአባት', 'የአያት', 'ጾታ', 'ፋይዳ', 'የትውልድ',
+        'ስልክ', 'የት/ት', 'መስክ', 'ልምድ', 'የቤተሰብ', 'ኃላፊነት',
+        'ተቀላቀለ', 'ተቋም', 'ህብረት', 'ደመወዝ', 'ወረዳ', 'ቀበሌ', 'ቤት ቁ'
+    ]
+    table_data.append(headers)
+    
+    # Data rows
+    for idx, emp in enumerate(employees, 1):
+        row = [
+            str(idx),
+            str(emp.fname or '-'),
+            str(emp.mname or '-'),
+            str(emp.lname or '-'),
+            str(emp.gender or '-'),
+            str(emp.fanID or '-'),
+            emp.birthdate.strftime('%Y-%m-%d') if emp.birthdate else '-',
+            str(emp.phone_number or '-'),
+            str(emp.edu_level or '-'),
+            str(emp.profession or '-'),
+            str(emp.work_experience or '-'),
+            str(emp.group_name or '-'),
+            str(emp.position_in_group or '-'),
+            emp.join_year.strftime('%Y-%m-%d') if emp.join_year else '-',
+            str(emp.work_place or '-'),
+            str(emp.work_place_name or '-'),
+            f"{emp.salary:,}" if emp.salary else '-',
+            str(emp.werada or '-'),
+            str(emp.kebele or '-'),
+            str(emp.house_number or '-'),
+        ]
+        table_data.append(row)
+    
+    # Create table with custom font for Amharic support
+    table = Table(table_data, repeatRows=1)
+    
+    # Style the table
+    style = TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.blue),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('FONTNAME', (0, 0), (-1, 0), font_name),
+        ('FONTSIZE', (0, 0), (-1, 0), 7),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 6),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
+        ('FONTSIZE', (0, 1), (-1, -1), 6),
+        ('ALIGN', (0, 1), (-1, -1), 'CENTER'),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('FONTNAME', (0, 1), (-1, -1), font_name),
+    ])
+    table.setStyle(style)
+    content.append(table)
+    
+    # Build PDF
+    doc.build(content)
+    buffer.seek(0)
+    
+    # Generate filename
+    filename = f"employee_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+    
+    # Return file for download
+    return send_file(
+        buffer,
+        as_attachment=True,
+        download_name=filename,
+        mimetype='application/pdf'
+    )
 
 @app.route("/logout")
 @login_required
@@ -146,6 +401,7 @@ def employ_add():
     except Exception as e:
         db.rollback()
         return jsonify({"error": str(e)}), 500
+
 @app.route('/api/enmploy/<ID>', methods=['PUT','PATCH'])
 @login_required
 def employ_update(ID):
@@ -182,6 +438,9 @@ def employ_delete(ID):
     employee = db.query(Employee).get(ID)
     if not employee:
         return jsonify({"error": "Employee not found"}), 404
+    photo_path = f"static/{employee.photo_url}"
+
+    os.remove(photo_path)
 
     db.delete(employee)
     db.commit()
