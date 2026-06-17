@@ -32,7 +32,7 @@
             <tbody>
                 {% if employees %}
                     {% for employee in employees %}
-                    <tr class="border-b border-gray-200 hover:bg-gray-50 transition">
+                    <tr class="border-b border-gray-200 hover:bg-gray-50 transition" id="employee-row-{{ employee.id }}">
                         <td class="py-3 px-4 text-gray-800 text-right">
                             {{ employee.fname }} {{ employee.mname }} {{ employee.lname }}
                         </td>
@@ -60,8 +60,8 @@
                                 </button>
                                 <div class="dropdown-menu hidden absolute right-0 mt-2 w-32 bg-white rounded-md shadow-lg z-50 border border-gray-200" style="position: absolute; z-index: 9999;">
                                     <a href="/employee/{{ employee.id }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">details</a>
-                                    <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">delete</a>
-                                    <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">update</a>
+                                    <button onclick="deleteEmployee({{ employee.id }})" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">delete</button>
+                                    <button onclick="openUpdateModal({{ employee.id }})" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">update</button>
                                 </div>
                             </div>
                         </td>
@@ -79,7 +79,7 @@
     </div>
 </div>
 
-<!-- Modal remains exactly as before (unchanged) -->
+<!-- Modal for Add Employee (unchanged) -->
 <div id="addEmployeeModal" style="display: none; position: fixed; inset: 0; background-color: rgba(0,0,0,0.5); overflow-y: auto; z-index: 1000; align-items: center; justify-content: center;">
     <div style="background-color: white; margin: 2rem auto; padding: 1.5rem; border-radius: 0.5rem; max-width: 64rem; width: 90%; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);">
         <div class="flex justify-between items-center pb-3 border-b">
@@ -208,13 +208,144 @@
     </div>
 </div>
 
+<!-- Modal for Update Employee -->
+<div id="updateEmployeeModal" style="display: none; position: fixed; inset: 0; background-color: rgba(0,0,0,0.5); overflow-y: auto; z-index: 1000; align-items: center; justify-content: center;">
+    <div style="background-color: white; margin: 2rem auto; padding: 1.5rem; border-radius: 0.5rem; max-width: 64rem; width: 90%; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);">
+        <div class="flex justify-between items-center pb-3 border-b">
+            <h3 class="text-xl font-semibold text-gray-900">Update Employee</h3>
+            <button onclick="document.getElementById('updateEmployeeModal').style.display='none'" 
+                    class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+        </div>
+        <form id="updateEmployeeForm" class="mt-4">
+            <input type="hidden" name="employee_id" id="updateEmployeeId">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-gray-700 text-sm font-medium mb-1">ስም</label>
+                    <input type="text" name="fname" id="update_fname" required class="w-full border border-gray-300 rounded-md px-3 py-2">
+                </div>
+                <div>
+                    <label class="block text-gray-700 text-sm font-medium mb-1">የአባት ስም</label>
+                    <input type="text" name="mname" id="update_mname" class="w-full border border-gray-300 rounded-md px-3 py-2">
+                </div>
+                <div>
+                    <label class="block text-gray-700 text-sm font-medium mb-1">የአባት ስም</label>
+                    <input type="text" name="lname" id="update_lname" class="w-full border border-gray-300 rounded-md px-3 py-2">
+                </div>
+                <div>
+                    <label class="block text-gray-700 text-sm font-medium mb-1">ጾታ</label>
+                    <select name="gender" id="update_gender" required class="w-full border border-gray-300 rounded-md px-3 py-2">
+                        <option value="ወነድ">ወነድ</option>
+                        <option value="ሴት">ሴት</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-gray-700 text-sm font-medium mb-1">ፋይዳ ቁጥር (FAN)</label>
+                    <input type="text" name="fanID" id="update_fanID" class="w-full border border-gray-300 rounded-md px-3 py-2">
+                </div>
+                <div>
+                    <label class="block text-gray-700 text-sm font-medium mb-1">የትውልድ ዘመን</label>
+                    <input type="date" name="birthdate" id="update_birthdate" class="w-full border border-gray-300 rounded-md px-3 py-2">
+                </div>
+                <div>
+                    <label class="block text-gray-700 text-sm font-medium mb-1">ስልክ ቁጥር</label>
+                    <input type="number" name="phone_number" id="update_phone_number" class="w-full border border-gray-300 rounded-md px-3 py-2">
+                </div>
+                <div>
+                    <label class="block text-gray-700 text-sm font-medium mb-1">የት/ት ደረጃ</label>
+                    <select name="edu_level" id="update_edu_level" required class="w-full border border-gray-300 rounded-md px-3 py-2">
+                        <option value="ፒ. ኤች .ዲ">ፒ. ኤች .ዲ</option>
+                        <option value="ሁለተኛ ድግሪ">ሁለተኛ ድግሪ</option>
+                        <option value="የመጀመሪያ ድግሪ">የመጀመሪያ ድግሪ</option>
+                        <option value="ዲፕሎማ">ዲፕሎማ</option>
+                        <option value="TVET">TVET</option>
+                        <option value="ሁለተኛ ደረጃ (9-12)">ሁለተኛ ደረጃ (9-12)</option>
+                        <option value="ከሁለተኛ ደረጃ በታች(1-8)">ከሁለተኛ ደረጃ በታች(1-8)</option>
+                        <option value="የትምህርት ደረጃ የለም">የትምህርት ደረጃ የለም</option>
+                        <option value="ማንበብና መፃፍ የሚችል">ማንበብና መፃፍ የሚችል</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-gray-700 text-sm font-medium mb-1">የት/ት መስክ</label>
+                    <input type="text" name="profession" id="update_profession" class="w-full border border-gray-300 rounded-md px-3 py-2">
+                </div>
+                <div>
+                    <label class="block text-gray-700 text-sm font-medium mb-1">የአባልነት ዘመን</label>
+                    <input type="date" name="join_year" id="update_join_year" class="w-full border border-gray-300 rounded-md px-3 py-2">
+                </div>
+                <div>
+                    <label class="block text-gray-700 text-sm font-medium mb-1">የስራ ልምድ(በዓመት)</label>
+                    <input type="number" name="work_experience" id="update_work_experience" class="w-full border border-gray-300 rounded-md px-3 py-2">
+                </div>
+                <div>
+                    <label class="block text-gray-700 text-sm font-medium mb-1">በፓርቲ ያለው ኃላፊነት</label>
+                    <select name="position_in_group" id="update_position_in_group" required class="w-full border border-gray-300 rounded-md px-3 py-2">
+                        <option value="የህብረት አመራር">የህብረት አመራር</option>
+                        <option value="የቤተሰብ አመራር">የቤተሰብ አመራር</option>
+                        <option value="የሴቶች ክንፍ አመራር">የሴቶች ክንፍ አመራር</option>
+                        <option value="የወነዶች ክንፍ አመራር">የወነዶች ክንፍ አመራር</option>
+                        <option value="የወጣቶች ክንፍ አመራር">የወጣቶች ክንፍ አመራር</option>
+                        <option value="ኢኒስፔክሽን አመራር">ኢኒስፔክሽን አመራር</option>
+                        <option value="አባል">አባል</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-gray-700 text-sm font-medium mb-1">የሚሰራበት ተቋም</label>
+                    <select name="work_place" id="update_work_place" required class="w-full border border-gray-300 rounded-md px-3 py-2">
+                        <option value="የሐረሪ ብሔራዌ ጉባኤ">የሐረሪ ብሔራዌ ጉባኤ</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-gray-700 text-sm font-medium mb-1">የህብረቱ ስም</label>
+                    <select name="work_place_name" id="update_work_place_name" required class="w-full border border-gray-300 rounded-md px-3 py-2">
+                        <option value="የሐረሪ ብሔራዌ ጉባኤ የብልፅግና ህብረት">የሐረሪ ብሔራዌ ጉባኤ የብልፅግና ህብረት</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-gray-700 text-sm font-medium mb-1">በወር የሚያገኘው የተጣራ ደመወዝ</label>
+                    <input type="number" name="salary" id="update_salary" class="w-full border border-gray-300 rounded-md px-3 py-2">
+                </div>
+                <div>
+                    <label class="block text-gray-700 text-sm font-medium mb-1">የቤተሰብ ስም</label>
+                    <select name="group_name" id="update_group_name" required class="w-full border border-gray-300 rounded-md px-3 py-2">
+                        <option value="ቁራስ ቤተሰብ">ቁራስ ቤተሰብ</option>
+                        <option value="አዳ ቤተሰብ">አዳ ቤተሰብ</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-gray-700 text-sm font-medium mb-1">ወረዳ</label>
+                    <input type="text" name="werada" id="update_werada" class="w-full border border-gray-300 rounded-md px-3 py-2">
+                </div>
+                <div>
+                    <label class="block text-gray-700 text-sm font-medium mb-1">ቀበሌ</label>
+                    <input type="text" name="kebele" id="update_kebele" class="w-full border border-gray-300 rounded-md px-3 py-2">
+                </div>
+                <div>
+                    <label class="block text-gray-700 text-sm font-medium mb-1">House Number</label>
+                    <input type="number" name="house_number" id="update_house_number" class="w-full border border-gray-300 rounded-md px-3 py-2">
+                </div>
+            </div>
+            <div class="flex justify-end gap-3 mt-6 pt-3 border-t">
+                <button type="button" onclick="document.getElementById('updateEmployeeModal').style.display='none'" 
+                        class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded-md transition">Cancel</button>
+                <button type="submit" id="updateBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md transition">Update Employee</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
     const modal = document.getElementById('addEmployeeModal');
     const form = document.getElementById('addEmployeeForm');
     const photoInput = document.getElementById('photoInput');
+    const updateModal = document.getElementById('updateEmployeeModal');
+    const updateForm = document.getElementById('updateEmployeeForm');
 
+    // Close modals when clicking on background overlay
     modal.addEventListener('click', function(e) {
         if (e.target === modal) modal.style.display = 'none';
+    });
+    updateModal.addEventListener('click', function(e) {
+        if (e.target === updateModal) updateModal.style.display = 'none';
     });
 
     // Dropdown toggle
@@ -231,6 +362,109 @@
         });
     });
 
+    // Delete Employee
+    async function deleteEmployee(id) {
+        if (!confirm('Are you sure you want to delete this employee?')) return;
+        try {
+            const response = await fetch("{{ url_for('employ_delete', ID='') }}" + id, {
+                method: 'DELETE',
+                credentials: 'same-origin'
+            });
+            if (response.ok) {
+                alert('Employee deleted successfully!');
+                document.getElementById('employee-row-' + id).remove();
+            } else {
+                const errorText = await response.text();
+                alert('Error: ' + (errorText || 'Could not delete employee.'));
+            }
+        } catch (error) {
+            console.error(error);
+            alert('Network error. Please try again.');
+        }
+    }
+
+    // Open Update Modal and fetch employee data
+    async function openUpdateModal(id) {
+        try {
+            // Fetch employee details (you need to create a GET endpoint)
+            const response = await fetch('/api/enmploy/' + id, {
+                method: 'GET',
+                credentials: 'same-origin'
+            });
+            if (response.ok) {
+                const data = await response.json();
+                document.getElementById('updateEmployeeId').value = id;
+                document.getElementById('update_fname').value = data.fname || '';
+                document.getElementById('update_mname').value = data.mname || '';
+                document.getElementById('update_lname').value = data.lname || '';
+                document.getElementById('update_gender').value = data.gender || '';
+                document.getElementById('update_fanID').value = data.fanID || '';
+                document.getElementById('update_birthdate').value = data.birthdate || '';
+                document.getElementById('update_phone_number').value = data.phone_number || '';
+                document.getElementById('update_edu_level').value = data.edu_level || '';
+                document.getElementById('update_profession').value = data.profession || '';
+                document.getElementById('update_join_year').value = data.join_year || '';
+                document.getElementById('update_work_experience').value = data.work_experience || '';
+                document.getElementById('update_position_in_group').value = data.position_in_group || '';
+                document.getElementById('update_work_place').value = data.work_place || '';
+                document.getElementById('update_work_place_name').value = data.work_place_name || '';
+                document.getElementById('update_salary').value = data.salary || '';
+                document.getElementById('update_group_name').value = data.group_name || '';
+                document.getElementById('update_werada').value = data.werada || '';
+                document.getElementById('update_kebele').value = data.kebele || '';
+                document.getElementById('update_house_number').value = data.house_number || '';
+                updateModal.style.display = 'flex';
+            } else {
+                alert('Could not fetch employee data.');
+            }
+        } catch (error) {
+            console.error(error);
+            alert('Network error. Please try again.');
+        }
+    }
+
+    // Update Employee form submission
+    updateForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const submitBtn = document.getElementById('updateBtn');
+        const originalText = submitBtn.innerText;
+        submitBtn.innerText = 'Updating...';
+        submitBtn.disabled = true;
+
+        const id = document.getElementById('updateEmployeeId').value;
+        const formData = new FormData(updateForm);
+        const formDataObj = {};
+        for (let [key, value] of formData.entries()) {
+            if (key !== 'employee_id' && key !== 'photo' && key !== 'photoInput') {
+                formDataObj[key] = value;
+            }
+        }
+
+        try {
+            const response = await fetch("{{ url_for('employ_update', ID='') }}" + id, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formDataObj),
+                credentials: 'same-origin'
+            });
+            if (response.ok) {
+                alert('Employee updated successfully!');
+                updateModal.style.display = 'none';
+                location.reload();
+            } else {
+                const errorText = await response.text();
+                alert('Error: ' + (errorText || 'Could not update employee.'));
+            }
+        } catch (error) {
+            console.error(error);
+            alert('Network error. Please try again.');
+        } finally {
+            submitBtn.innerText = originalText;
+            submitBtn.disabled = false;
+        }
+    });
+
+    // Add Employee form submission
     function fileToBase64(file) {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();

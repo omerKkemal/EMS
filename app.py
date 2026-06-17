@@ -149,12 +149,75 @@ def employ_add():
 @app.route('/api/enmploy/<ID>', methods=['PUT','PATCH'])
 @login_required
 def employ_update(ID):
-    pass
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "No JSON data provided"}), 400
+
+    employee = db.query(Employee).get(ID)
+    if not employee:
+        return jsonify({"error": "Employee not found"}), 404
+
+    def parse_date(date_str):
+        if date_str:
+            try:
+                return datetime.strptime(date_str, '%Y-%m-%d').date()
+            except (ValueError, TypeError):
+                return None
+        return None
+
+    # Update fields
+    for field in ['fname', 'mname', 'lname', 'gender', 'fanID', 'birthdate', 'phone_number', 'edu_level', 'profession', 'work_experience', 'group_name', 'position_in_group', 'join_year', 'work_place', 'work_place_name', 'salary', 'werada', 'kebele', 'house_number']:
+        if field in data:
+            if field in ['birthdate', 'join_year']:
+                setattr(employee, field, parse_date(data[field]))
+            else:
+                setattr(employee, field, data[field])
+
+    db.commit()
+    return jsonify({"message": "Employee updated successfully"}), 200
 
 @app.route('/api/enmploy/delete/<ID>', methods=['DELETE'])
 @login_required
 def employ_delete(ID):
-    pass
+    employee = db.query(Employee).get(ID)
+    if not employee:
+        return jsonify({"error": "Employee not found"}), 404
+
+    db.delete(employee)
+    db.commit()
+    return jsonify({"message": "Employee deleted successfully"}), 200
+
+
+@app.route('/api/enmploy/<ID>', methods=['GET'])
+@login_required
+def employ_get(ID):
+    employee = db.query(Employee).get(ID)
+    if not employee:
+        return jsonify({"error": "Employee not found"}), 404
+    
+    return jsonify({
+        'fname': employee.fname,
+        'mname': employee.mname,
+        'lname': employee.lname,
+        'gender': employee.gender,
+        'fanID': employee.fanID,
+        'birthdate': employee.birthdate.strftime('%Y-%m-%d') if employee.birthdate else None,
+        'phone_number': employee.phone_number,
+        'edu_level': employee.edu_level,
+        'profession': employee.profession,
+        'work_experience': employee.work_experience,
+        'group_name': employee.group_name,
+        'position_in_group': employee.position_in_group,
+        'join_year': employee.join_year.strftime('%Y-%m-%d') if employee.join_year else None,
+        'work_place': employee.work_place,
+        'work_place_name': employee.work_place_name,
+        'salary': employee.salary,
+        'werada': employee.werada,
+        'kebele': employee.kebele,
+        'house_number': employee.house_number
+    }), 200
+
+
 
 if __name__ == '__main__':
     app.run(debug=True)
