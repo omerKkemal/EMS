@@ -63,6 +63,43 @@ def login():
 
 # auth
 
+@login_required
+@app.route('/upload_multiple_docs/<int:employee_id>', methods=['POST'])
+def upload_multiple_docs(employee_id):
+    employee = db.query(Employee).filter_by(id=employee_id).first()
+    if not employee:
+        flash("Employee not found", "error")
+        return redirect('/action')
+
+    files = request.files.getlist('docs')
+    if not files:
+        flash("No files uploaded", "error")
+        return redirect(f'/employee/{employee_id}')
+
+    for file in files:
+        if file and file.filename:
+            filename = secure_filename(file.filename)
+            os.makedirs('static/docs', exist_ok=True)
+            file_path = os.path.join('static/docs', filename)
+            file.save(file_path)
+
+            doc = Doc(
+                employee_id=employee_id,
+                name=filename,
+                url=f"docs/{filename}",
+                file_type=file.content_type
+            )
+            db.add(doc)
+
+    try:
+        db.commit()
+        flash("Documents uploaded successfully", "success")
+    except Exception as e:
+        db.rollback()
+        flash(f"Error uploading documents: {str(e)}", "error")
+
+    return redirect(f'/employee/{employee_id}')
+
 
 @login_required
 @app.route('/dashboard')
