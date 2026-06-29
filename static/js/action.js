@@ -30,7 +30,7 @@ window.addEventListener('click', function() {
 async function deleteEmployee(id) {
     if (!confirm('Are you sure you want to delete this employee?')) return;
     try {
-        const response = await fetch("{{ url_for('employ_delete', ID='') }}" + id, {
+        const response = await fetch("/api/enmploy/delete/" + id, {
             method: 'DELETE',
             credentials: 'same-origin'
         });
@@ -105,7 +105,7 @@ updateForm.addEventListener('submit', async function(e) {
     }
 
     try {
-        const response = await fetch("{{ url_for('employ_update', ID='') }}" + id, {
+        const response = await fetch("/api/enmploy/" + id, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(formDataObj),
@@ -155,7 +155,7 @@ form.addEventListener('submit', async function(e) {
         formDataObj.photo = base64Photo;
     }
     try {
-        const response = await fetch("{{ url_for('employ_add') }}", {
+        const response = await fetch("/api/employ", {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(formDataObj),

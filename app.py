@@ -18,14 +18,57 @@ from db import SessionLocal, Base
 
 db = SessionLocal()
 
-app = Flask(__name__)
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+STATIC_FOLDER = os.path.join(BASE_DIR, 'static')
+
+app = Flask(
+    __name__,
+    static_folder=STATIC_FOLDER,
+    static_url_path='/static'
+)
 
 app.secret_key = "my_secret_key"
-# create default user
-default_admin()
+
+# ============================================
+# PYTHONANYWHERE STATIC FILE CONFIGURATION
+# ============================================
+# Get absolute paths for the application
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+PROFILE_PICS_FOLDER = os.path.join(STATIC_FOLDER, 'profile_pics')
+FONTS_FOLDER = os.path.join(STATIC_FOLDER, 'fonts')
+DOCUMENTS_FOLDER = os.path.join(STATIC_FOLDER, 'docs')
+
+# Ensure all necessary folders exist
+os.makedirs(STATIC_FOLDER, exist_ok=True)
+os.makedirs(PROFILE_PICS_FOLDER, exist_ok=True)
+os.makedirs(FONTS_FOLDER, exist_ok=True)
+os.makedirs(DOCUMENTS_FOLDER, exist_ok=True)
+
+# Configure upload settings
+app.config['UPLOAD_FOLDER'] = PROFILE_PICS_FOLDER
+app.config['DOCUMENTS_FOLDER'] = DOCUMENTS_FOLDER
+app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # 100MB max file size
+
+# Allowed extensions for documents
+app.config['ALLOWED_DOCUMENT_EXTENSIONS'] = {
+    'pdf', 'jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'
+}
+
+
+# ============================================
+# FLASK LOGIN CONFIGURATION
+# ============================================
+# Create default user
+try:
+    default_admin()
+except Exception as e:
+    print(f"Warning: Could not create default user: {e}")
+
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = "login"
+login_manager.login_message = "Please log in to access this page."
+login_manager.login_message_category = "info"
 
 
 @app.context_processor
@@ -79,8 +122,8 @@ def upload_multiple_docs(employee_id):
     for file in files:
         if file and file.filename:
             filename = secure_filename(file.filename)
-            os.makedirs('static/docs', exist_ok=True)
-            file_path = os.path.join('static/docs', filename)
+            os.makedirs(DOCUMENTS_FOLDER, exist_ok=True)
+            file_path = os.path.join(DOCUMENTS_FOLDER, filename)
             file.save(file_path)
 
             doc = Doc(
@@ -109,9 +152,9 @@ def dashboard():
     male_employee = len(db.query(Employee).filter_by(gender="ወነድ").all())
 
     return render_template(
-        "dashboard.html", 
-        number_of_employee=number_of_employee, 
-        female_employee=female_employee, 
+        "dashboard.html",
+        number_of_employee=number_of_employee,
+        female_employee=female_employee,
         male_employee=male_employee
     )
 
@@ -141,17 +184,17 @@ def setting():
     if not user_info:
         flash("User not found", "error")
         return redirect('/dashboard')
-    
+
     if request.method == 'POST':
         email = request.form.get('email')
         password = request.form.get('password')
         confirm_password = request.form.get('confirm_password')
-        
+
         # Validate email
         if not email:
             flash("Email is required", "error")
             return redirect('/setting')
-        
+
         # Check if password is provided and matches
         if password:
             if password != confirm_password:
@@ -160,12 +203,12 @@ def setting():
             if len(password) < 8:
                 flash("Password must be at least 8 characters long", "error")
                 return redirect('/setting')
-        
+
         # Update user info
         user_info.email = email
         if password:  # Only update password if provided
             user_info.password = password  # Consider hashing the password!
-        
+
         try:
             db.commit()
             flash("Profile updated successfully", "success")
@@ -174,7 +217,7 @@ def setting():
             db.rollback()
             flash(f"Error updating profile: {str(e)}", "error")
             return redirect('/setting')
-    
+
     return render_template('admin_profile.html', user_info=user_info)
 
 
@@ -188,7 +231,7 @@ def report():
 @login_required
 def report_download():
     employees = db.query(Employee).all()
-    
+
     # Create PDF
     buffer = BytesIO()
     doc = SimpleDocTemplate(
@@ -199,17 +242,18 @@ def report_download():
         topMargin=0.5*inch,
         bottomMargin=0.5*inch
     )
-    
+
     # Register a font that supports Amharic
     from reportlab.pdfbase import pdfmetrics
     from reportlab.pdfbase.ttfonts import TTFont
-    
+
     # Make sure the fonts directory exists
     os.makedirs('static/fonts', exist_ok=True)
-    
+
     # Try different font paths
+    os.makedirs(FONTS_FOLDER, exist_ok=True)
     font_paths = [
-        os.path.join('static', 'fonts', 'AbyssinicaSIL-Regular.ttf'),
+        os.path.join(FONTS_FOLDER, 'AbyssinicaSIL-Regular.ttf'),
         os.path.join('static', 'fonts', 'Kefa.ttf'),
         os.path.join('static', 'fonts', 'Ethiopic.ttf'),
         os.path.join('static', 'fonts', 'NotoSansEthiopic-Regular.ttf'),
@@ -219,10 +263,10 @@ def report_download():
         '/usr/share/fonts/truetype/noto/NotoSansEthiopic-Regular.ttf',
         '/System/Library/Fonts/Supplemental/Arial.ttf',  # macOS
     ]
-    
+
     font_registered = False
     font_name = 'Helvetica'  # fallback font
-    
+
     for font_path in font_paths:
         if os.path.exists(font_path):
             try:
@@ -234,15 +278,15 @@ def report_download():
             except Exception as e:
                 print(f"Failed to load font from {font_path}: {e}")
                 continue
-    
+
     if not font_registered:
         print("Warning: No Amharic font found. Using Helvetica fallback. Amharic characters may not display correctly.")
         print("Please download Abyssinica SIL font from: https://abyssinica.com/")
         print("And place it in: static/fonts/AbyssinicaSIL-Regular.ttf")
-    
+
     # Styles
     styles = getSampleStyleSheet()
-    
+
     # Create custom styles with the Amharic font
     title_style = ParagraphStyle(
         'TitleStyle',
@@ -251,7 +295,7 @@ def report_download():
         fontName=font_name,
         fontSize=16
     )
-    
+
     date_style = ParagraphStyle(
         'DateStyle',
         parent=styles['Normal'],
@@ -260,38 +304,38 @@ def report_download():
         textColor=colors.gray,
         fontName=font_name
     )
-    
+
     header_style = ParagraphStyle(
         'HeaderStyle',
         parent=styles['Normal'],
         fontName=font_name,
         fontSize=7
     )
-    
+
     cell_style = ParagraphStyle(
         'CellStyle',
         parent=styles['Normal'],
         fontName=font_name,
         fontSize=6
     )
-    
+
     # Build content
     content = []
-    
+
     # Title
     title = Paragraph("Employee Report", title_style)
     content.append(title)
     content.append(Spacer(1, 0.2*inch))
-    
+
     # Date
     date_str = datetime.now().strftime("%Y-%m-%d %H:%M")
     date_para = Paragraph(f"Generated on: {date_str}", date_style)
     content.append(date_para)
     content.append(Spacer(1, 0.3*inch))
-    
+
     # Prepare table data
     table_data = []
-    
+
     # Headers
     headers = [
         '#', 'ስም', 'የአባት', 'የአያት', 'ጾታ', 'ፋይዳ', 'የትውልድ',
@@ -299,7 +343,7 @@ def report_download():
         'ተቀላቀለ', 'ተቋም', 'ህብረት', 'ደመወዝ', 'ወረዳ', 'ቀበሌ', 'ቤት ቁ'
     ]
     table_data.append(headers)
-    
+
     # Data rows
     for idx, emp in enumerate(employees, 1):
         row = [
@@ -325,10 +369,10 @@ def report_download():
             str(emp.house_number or '-'),
         ]
         table_data.append(row)
-    
+
     # Create table with custom font for Amharic support
     table = Table(table_data, repeatRows=1)
-    
+
     # Style the table
     style = TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), colors.blue),
@@ -346,14 +390,14 @@ def report_download():
     ])
     table.setStyle(style)
     content.append(table)
-    
+
     # Build PDF
     doc.build(content)
     buffer.seek(0)
-    
+
     # Generate filename
     filename = f"employee_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
-    
+
     # Return file for download
     return send_file(
         buffer,
@@ -428,8 +472,8 @@ def employ_add():
                 fan_id = data.get('fanID', 'unknown')
                 timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
                 photo_filename = f"{fan_id}_{timestamp}.jpg"
-                os.makedirs('static/profile_pics', exist_ok=True)
-                with open(f"static/profile_pics/{photo_filename}", 'wb') as f:
+                os.makedirs(PROFILE_PICS_FOLDER, exist_ok=True)
+                with open(os.path.join(PROFILE_PICS_FOLDER, photo_filename), 'wb') as f:
                     f.write(photo_data)
             except Exception as e:
                 return jsonify({"error": "Failed to save photo"}), 500
@@ -475,9 +519,12 @@ def employ_delete(ID):
     employee = db.query(Employee).get(ID)
     if not employee:
         return jsonify({"error": "Employee not found"}), 404
-    photo_path = f"static/{employee.photo_url}"
+    photo_path = os.path.join(STATIC_FOLDER, employee.photo_url)
 
-    os.remove(photo_path)
+    try:
+        os.remove(photo_path)
+    except:
+        return jsonify({"message": "no such file"}), 500
 
     db.delete(employee)
     db.commit()
@@ -490,7 +537,7 @@ def employ_get(ID):
     employee = db.query(Employee).get(ID)
     if not employee:
         return jsonify({"error": "Employee not found"}), 404
-    
+
     return jsonify({
         'fname': employee.fname,
         'mname': employee.mname,
